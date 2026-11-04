@@ -48,10 +48,16 @@ const createFakeRange = (
 
 /**
  * A part of the text ending with "^", as Word's getTextRanges returns it. The words it
- * can find expand to the given range, and only when they end at the expected place.
+ * can find expand to the given range, and only to the expected end: real expandTo
+ * covers both ranges, so expanding to the whole piece would take the text before too.
  */
 const createCaretPiece = (words, expanded, expectedEnd) => {
+  const pieceEnd = {};
   const piece = {
+    getRange: (location) => {
+      if (location !== 'End') throw new Error(`Unexpected location ${location}`);
+      return pieceEnd;
+    },
     search: (word) => ({
       load() {},
       items: word in words
@@ -59,7 +65,7 @@ const createCaretPiece = (words, expanded, expectedEnd) => {
             {
               ...words[word],
               expandTo: (end) => {
-                if (end !== (expectedEnd ?? piece)) throw new Error('Expanded to the wrong end');
+                if (end !== (expectedEnd ?? pieceEnd)) throw new Error('Expanded to the wrong end');
                 return expanded;
               },
             },
@@ -278,6 +284,23 @@ describe('convertSelection', () => {
     expect(await convertSelection(context)).toBe(2);
     expect(firstLog.map((entry) => entry.text).join('')).toBe('CO2↑');
     expect(secondLog.map((entry) => entry.text).join('')).toBe('H2↑');
+  });
+
+  test('replaces only the formula when text comes before its caret', async () => {
+    const log = [];
+    const text = 'CaCO3 -> CaO + CO2^';
+    const context = createFakeContext({
+      text,
+      selectionText: text,
+      matches: {
+        CaCO3: [createFakeRange('CaCO3')],
+        '->': [createFakeRange('->')],
+      },
+      caretPieces: [createCaretPiece({ CO2: {} }, createFakeRange('CO2^', { log }))],
+    });
+
+    expect(await convertSelection(context)).toBe(3);
+    expect(log.map((entry) => entry.text).join('')).toBe('CO2↑');
   });
 
   test('skips a caret formula when Word splits the text differently', async () => {

@@ -76,7 +76,8 @@ async function locateCaretHits(context, scope, text, hits) {
 
   const located = found.flatMap(({ hit, mark, heads, tails }) => {
     const start = heads.items.at(-1);
-    const end = tails ? tails.items[0] : mark;
+    // expandTo covers both ranges, so it must not get the piece, which holds earlier text.
+    const end = tails ? tails.items[0] : mark.getRange('End');
     return start && end ? [{ hit, range: start.expandTo(end) }] : [];
   });
   located.forEach(({ range }) => range.load(FONT_PROPERTIES.join(',')));
