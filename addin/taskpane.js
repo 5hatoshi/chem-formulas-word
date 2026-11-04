@@ -106,6 +106,15 @@ Office.onReady(async () => {
   const isMac = Office.context.platform === Office.PlatformType.Mac;
   document.getElementById('shortcut-hint').textContent = isMac ? SHORTCUT_MAC : SHORTCUT_OTHER;
   document.getElementById('convert-button').addEventListener('click', convertNow);
+  document.getElementById('diag-button').addEventListener('click', async () => {
+    const output = document.getElementById('diag-output');
+    output.textContent = 'Měřím…';
+    try {
+      output.textContent = await measureCaret();
+    } catch (error) {
+      output.textContent = `Měření selhalo: ${error?.code ?? ''} ${error?.message ?? error}`;
+    }
+  });
 
   const toggle = document.getElementById('auto-toggle');
   const canRunAuto = Office.context.requirements.isSetSupported('WordApi', MIN_EVENT_API_VERSION);
