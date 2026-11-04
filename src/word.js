@@ -14,20 +14,20 @@ const DEFAULT_DELAY_MS = 0;
 const DEFAULT_POLL_INTERVAL_MS = 0;
 const POLL_QUIET_MS = 3000;
 const ITEM_NOT_FOUND = 'ItemNotFound';
+const CARET = '^';
+const FONT_PROPERTIES = ['font/name', 'font/subscript', 'font/superscript'];
 
 /**
- * Finds the Word range of each hit, with its font, in one round trip. A token whose
- * match count differs from the text (fields, hidden text) is skipped, because its
- * matches can't be told apart.
+ * Finds the Word range of each hit without a caret, with its font, in one round trip.
+ * A token whose match count differs from the text (fields, hidden text) is skipped,
+ * because its matches can't be told apart.
  * @param {any} context @param {any} scope @param {string} text @param {FormulaHit[]} hits
  * @returns {Promise<LocatedHit[]>}
  */
-async function locateHits(context, scope, text, hits) {
+async function locatePlainHits(context, scope, text, hits) {
   const sources = [...new Set(hits.map((hit) => hit.source))];
-  const searches = new Map(
-    sources.map((source) => [source, scope.search(source.replaceAll('^', '^^'), { matchCase: true })]),
-  );
-  searches.forEach((results) => results.load('items/font/name,items/font/subscript,items/font/superscript'));
+  const searches = new Map(sources.map((source) => [source, scope.search(source, { matchCase: true })]));
+  searches.forEach((results) => results.load(FONT_PROPERTIES.map((name) => `items/${name}`).join(',')));
   await context.sync();
 
   return hits.flatMap((hit) => {
@@ -35,6 +35,68 @@ async function locateHits(context, scope, text, hits) {
     if (items.length !== occurrenceIndex(text, hit.source, text.length)) return [];
     return [{ hit, range: items[occurrenceIndex(text, hit.source, hit.start)] }];
   });
+}
+
+/**
+ * Prepares the searches around a hit's caret. A caret is special in a Word search and
+ * was not converted in Word on the web, so the text is split at each caret instead,
+ * where it is taken literally.
+ * @param {any[]} pieces Parts of the text, each ending with a caret except the last.
+ * @param {string} text @param {FormulaHit} hit
+ * @returns {{ hit: FormulaHit, mark: any, heads: any, tails: any } | null} Null when
+ *   Word split the text differently from what the text says.
+ */
+const searchAroundCaret = (pieces, text, hit) => {
+  const caretAt = text.indexOf(CARET, hit.start);
+  const pieceIndex = text.slice(0, caretAt).split(CARET).length - 1;
+  const mark = pieces[pieceIndex];
+  const tail = hit.source.slice(caretAt - hit.start + 1);
+  const tailPiece = tail ? pieces[pieceIndex + 1] : mark;
+  if (!mark || !tailPiece) return null;
+
+  const heads = mark.search(hit.source.slice(0, caretAt - hit.start), { matchCase: true });
+  const tails = tail ? tailPiece.search(tail, { matchCase: true }) : null;
+  heads.load('items');
+  tails?.load('items');
+  return { hit, mark, heads, tails };
+};
+
+/**
+ * Finds the Word range of each hit with a caret, with its font.
+ * @param {any} context @param {any} scope @param {string} text @param {FormulaHit[]} hits
+ * @returns {Promise<LocatedHit[]>}
+ */
+async function locateCaretHits(context, scope, text, hits) {
+  const pieces = scope.getTextRanges([CARET], false);
+  pieces.load('items');
+  await context.sync();
+
+  const found = hits.flatMap((hit) => searchAroundCaret(pieces.items, text, hit) ?? []);
+  await context.sync();
+
+  const located = found.flatMap(({ hit, mark, heads, tails }) => {
+    const start = heads.items.at(-1);
+    const end = tails ? tails.items[0] : mark;
+    return start && end ? [{ hit, range: start.expandTo(end) }] : [];
+  });
+  located.forEach(({ range }) => range.load(FONT_PROPERTIES.join(',')));
+  await context.sync();
+  return located;
+}
+
+/**
+ * @param {any} context @param {any} scope @param {string} text @param {FormulaHit[]} hits
+ * @returns {Promise<LocatedHit[]>} The hits Word could find, in the order of the text.
+ */
+async function locateHits(context, scope, text, hits) {
+  const hasCaret = (hit) => hit.source.includes(CARET);
+  const plain = hits.filter((hit) => !hasCaret(hit));
+  const withCaret = hits.filter(hasCaret);
+  const located = [
+    ...(plain.length > 0 ? await locatePlainHits(context, scope, text, plain) : []),
+    ...(withCaret.length > 0 ? await locateCaretHits(context, scope, text, withCaret) : []),
+  ];
+  return located.sort((a, b) => a.hit.start - b.hit.start);
 }
 
 /**
