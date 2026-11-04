@@ -1,5 +1,11 @@
 /* global Office, Word */
-import { ADDIN_VERSION, convertSelection, createAutoConverter, readActiveParagraph } from './src/word.js';
+import {
+  ADDIN_VERSION,
+  convertSelection,
+  createAutoConverter,
+  onFormulaSkipped,
+  readActiveParagraph,
+} from './src/word.js';
 
 const AUTO_SETTING_KEY = 'chem-vzorce.auto';
 const MIN_EVENT_API_VERSION = '1.6';
@@ -107,6 +113,10 @@ Office.onReady(async () => {
   document.getElementById('shortcut-hint').textContent = isMac ? SHORTCUT_MAC : SHORTCUT_OTHER;
   document.getElementById('convert-button').addEventListener('click', convertNow);
   document.getElementById('version').textContent = `Verze ${ADDIN_VERSION}`;
+  onFormulaSkipped((source, found) => {
+    document.getElementById('skipped').textContent =
+      `Vzorec ${source} jsem nechal být, Word na jeho místě vrátil ${JSON.stringify(found)}.`;
+  });
 
   const toggle = document.getElementById('auto-toggle');
   const canRunAuto = Office.context.requirements.isSetSupported('WordApi', MIN_EVENT_API_VERSION);
