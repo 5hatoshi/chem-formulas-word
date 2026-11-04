@@ -31,6 +31,7 @@ const createFakeRange = (
   });
   return {
     text,
+    load() {},
     font: {
       name: fontName,
       subscript: raised ? true : plainFlag,
@@ -45,8 +46,33 @@ const createFakeRange = (
   };
 };
 
+/**
+ * A part of the text ending with "^", as Word's getTextRanges returns it. The words it
+ * can find expand to the given range, and only when they end at the expected place.
+ */
+const createCaretPiece = (words, expanded, expectedEnd) => {
+  const piece = {
+    search: (word) => ({
+      load() {},
+      items: word in words
+        ? [
+            {
+              ...words[word],
+              expandTo: (end) => {
+                if (end !== (expectedEnd ?? piece)) throw new Error('Expanded to the wrong end');
+                return expanded;
+              },
+            },
+          ]
+        : [],
+    }),
+  };
+  return piece;
+};
+
 const createFakeContext = ({
   text,
+  caretPieces = [],
   matches = {},
   selectionText = '',
   paragraphText = text,
@@ -56,6 +82,7 @@ const createFakeContext = ({
   const scope = {
     text,
     load() {},
+    getTextRanges: () => ({ items: caretPieces, load() {} }),
     search: (source) => ({
       items: matches[source] ?? [],
       // Real Word fails when a property is read without being loaded first.
@@ -140,7 +167,7 @@ describe('convertSelection', () => {
     const context = createFakeContext({
       text: 'CO2^',
       selectionText: 'CO2^',
-      matches: { 'CO2^^': [createFakeRange('CO2^', { log, fontName: 'Aptos' })] },
+      caretPieces: [createCaretPiece({ CO2: {} }, createFakeRange('CO2^', { log, fontName: 'Aptos' }))],
     });
 
     await convertSelection(context);
@@ -222,16 +249,51 @@ describe('convertSelection', () => {
     expect(await convertSelection(context)).toBe(1);
   });
 
-  test('escapes the caret, which is a special character in a Word search', async () => {
+  test('finds a caret in the middle of a formula without searching for it', async () => {
     const log = [];
+    const tailStart = {};
+    const tailPiece = { search: () => ({ items: [tailStart], load() {} }) };
     const context = createFakeContext({
       text: 'SO4^2-',
       selectionText: 'SO4^2-',
-      matches: { 'SO4^^2-': [createFakeRange('SO4^2-', { log })] },
+      caretPieces: [createCaretPiece({ SO4: {} }, createFakeRange('SO4^2-', { log }), tailStart), tailPiece],
     });
 
     expect(await convertSelection(context)).toBe(1);
     expect(log.map((entry) => entry.text).join('')).toBe('SO42−');
+  });
+
+  test('takes the part of the text that ends with the right caret', async () => {
+    const firstLog = [];
+    const secondLog = [];
+    const context = createFakeContext({
+      text: 'CO2^ H2^',
+      selectionText: 'CO2^ H2^',
+      caretPieces: [
+        createCaretPiece({ CO2: {} }, createFakeRange('CO2^', { log: firstLog })),
+        createCaretPiece({ H2: {} }, createFakeRange('H2^', { log: secondLog })),
+      ],
+    });
+
+    expect(await convertSelection(context)).toBe(2);
+    expect(firstLog.map((entry) => entry.text).join('')).toBe('CO2↑');
+    expect(secondLog.map((entry) => entry.text).join('')).toBe('H2↑');
+  });
+
+  test('skips a caret formula when Word splits the text differently', async () => {
+    const context = createFakeContext({ text: 'CO2^', selectionText: 'CO2^', caretPieces: [] });
+
+    expect(await convertSelection(context)).toBe(0);
+  });
+
+  test('skips a caret formula when the text before the caret is not found', async () => {
+    const context = createFakeContext({
+      text: 'CO2^',
+      selectionText: 'CO2^',
+      caretPieces: [createCaretPiece({}, createFakeRange('CO2^'))],
+    });
+
+    expect(await convertSelection(context)).toBe(0);
   });
 
   test('skips a token when the search count does not match the text', async () => {
