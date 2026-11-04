@@ -14,6 +14,7 @@ const DEFAULT_DELAY_MS = 0;
 const DEFAULT_POLL_INTERVAL_MS = 0;
 const POLL_QUIET_MS = 3000;
 const ITEM_NOT_FOUND = 'ItemNotFound';
+export const BUILD = 'diag-1';
 const CARET = '^';
 const FONT_PROPERTIES = ['font/name', 'font/subscript', 'font/superscript'];
 
