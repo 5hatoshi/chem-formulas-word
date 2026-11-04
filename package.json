@@ -1,6 +1,6 @@
 {
   "name": "chem-formulas-word",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Doplněk do Wordu, který upravuje chemické vzorce (H2SO4 → H₂SO₄).",

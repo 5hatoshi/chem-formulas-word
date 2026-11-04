@@ -5,14 +5,14 @@
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
   <Id>3f7a1c52-8e4d-4b6a-9c21-5d0e7ab41f36</Id>
-  <Version>0.1.0.0</Version>
-  <ProviderName>Chemické vzorce</ProviderName>
+  <Version>1.0.0.0</Version>
+  <ProviderName>5hatoshi</ProviderName>
   <DefaultLocale>cs-CZ</DefaultLocale>
   <DisplayName DefaultValue="Chemické vzorce"/>
   <Description DefaultValue="Upravuje chemické vzorce: H2SO4 na H₂SO₄, Ca2+ na Ca²⁺ a CuSO4.5H2O na CuSO₄·5H₂O."/>
   <IconUrl DefaultValue="https://5hatoshi.github.io/chem-formulas-word/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://5hatoshi.github.io/chem-formulas-word/assets/icon-64.png"/>
-  <SupportUrl DefaultValue="https://5hatoshi.github.io/chem-formulas-word/taskpane.html"/>
+  <SupportUrl DefaultValue="https://5hatoshi.github.io/chem-formulas-word/support.html"/>
   <Hosts>
     <Host Name="Document"/>
   </Hosts>
