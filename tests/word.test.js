@@ -17,7 +17,7 @@ const createLinkedFont = () => {
 /** Minimal stand-in for the parts of the Word API the add-in uses. */
 const createFakeRange = (
   text,
-  { plain = true, raised = false, log = [] } = {},
+  { plain = true, raised = false, log = [], fontName = 'Aptos' } = {},
 ) => {
   const plainFlag = plain ? false : null;
   const makeInserted = (inserted) => ({
@@ -31,7 +31,12 @@ const createFakeRange = (
   });
   return {
     text,
-    font: { subscript: raised ? true : plainFlag, superscript: raised ? false : plainFlag, load() {} },
+    font: {
+      name: fontName,
+      subscript: raised ? true : plainFlag,
+      superscript: raised ? false : plainFlag,
+      load() {},
+    },
     insertText(next, location) {
       const range = makeInserted(next);
       log.push({ text: next, location, range });
@@ -51,7 +56,15 @@ const createFakeContext = ({
   const scope = {
     text,
     load() {},
-    search: (source) => ({ items: matches[source] ?? [], load() {} }),
+    search: (source) => ({
+      items: matches[source] ?? [],
+      // Real Word fails when a property is read without being loaded first.
+      load(properties) {
+        if (!properties.includes('items/font/name')) {
+          throw Object.assign(new Error('PropertyNotLoaded'), { code: 'PropertyNotLoaded' });
+        }
+      },
+    }),
   };
   const paragraph = {
     ...scope,
@@ -120,6 +133,36 @@ describe('convertSelection', () => {
       ['Ca', false, false],
       ['2+', false, true],
     ]);
+  });
+
+  test('keeps the original font on every written segment, including an arrow', async () => {
+    const log = [];
+    const context = createFakeContext({
+      text: 'CO2^',
+      selectionText: 'CO2^',
+      matches: { 'CO2^^': [createFakeRange('CO2^', { log, fontName: 'Aptos' })] },
+    });
+
+    await convertSelection(context);
+
+    expect(log.map(({ text, range }) => [text, range.font.name])).toEqual([
+      ['CO', 'Aptos'],
+      ['2', 'Aptos'],
+      ['↑', 'Aptos'],
+    ]);
+  });
+
+  test('leaves the font alone when the original text mixes fonts', async () => {
+    const log = [];
+    const context = createFakeContext({
+      text: 'H2O',
+      selectionText: 'H2O',
+      matches: { H2O: [createFakeRange('H2O', { log, fontName: '' })] },
+    });
+
+    await convertSelection(context);
+
+    expect(log.map(({ range }) => range.font.name)).toEqual([undefined, undefined, undefined]);
   });
 
   test('picks the right match when the token also appears inside a longer formula', async () => {
