@@ -144,3 +144,55 @@ describe('ordinary text stays as written', () => {
     expect(render(text)).toBe('');
   });
 });
+
+describe('reaction arrows', () => {
+  test.each([
+    ['2H2 + O2 -> 2H2O', '2H_2_ | O_2_ | → | 2H_2_O'],
+    ['H2+O2->H2O', 'H_2_ | O_2_ | → | H_2_O'],
+    ['N2 + 3H2 --> 2NH3', 'N_2_ | 3H_2_ | → | 2NH_3_'],
+    ['N2 + 3H2 <=> 2NH3', 'N_2_ | 3H_2_ | ⇌ | 2NH_3_'],
+    ['N2 + 3H2 <==> 2NH3', 'N_2_ | 3H_2_ | ⇌ | 2NH_3_'],
+    ['A <-> B', '↔'],
+    ['A <--> B', '↔'],
+    ['A –> B', '→'],
+    ['Ca2+->Ca', 'Ca^2+^ | →'],
+  ])('%s', (text, expected) => {
+    expect(render(text)).toBe(expected);
+  });
+
+  test.each(['p->x', 'https://a.cz/x->y', 'x <- 5', 'a < b', 'a > b', '- b'])('leaves "%s" alone', (text) => {
+    expect(render(text)).toBe('');
+  });
+});
+
+describe('gas and precipitate arrows', () => {
+  test.each([
+    ['CO2^', 'CO_2_↑'],
+    ['NH3^', 'NH_3_↑'],
+    ['H2^', 'H_2_↑'],
+    ['HCl^', 'HCl↑'],
+    ['CO^', 'CO↑'],
+    ['BaSO4v', 'BaSO_4_↓'],
+    ['AgClv', 'AgCl↓'],
+    ['PbSv', 'PbS↓'],
+    ['Fe(OH)3v', 'Fe(OH)_3_↓'],
+    ['CaCO3 -> CaO + CO2^', 'CaCO_3_ | → | CO_2_↑'],
+  ])('%s', (text, expected) => {
+    expect(render(text)).toBe(expected);
+  });
+
+  test('keeps the source of a formula with an arrow for the Word search', () => {
+    expect(findFormulas('CO2^ ', 'strict')[0].source).toBe('CO2^');
+  });
+
+  test('still reads a caret followed by a charge as a charge', () => {
+    expect(render('SO4^2-')).toBe('SO_4_^2−^');
+  });
+
+  test.each(['Sv. Václav', 'Cv. 5', 'Cov', 'Kov', 'Nav', 'CO2v2', 'C^', 'O^', 'Fe^', 'BaSO4 v vodě'])(
+    'leaves the arrow out of "%s"',
+    (text) => {
+      expect(render(text)).not.toMatch(/[↑↓]/);
+    },
+  );
+});

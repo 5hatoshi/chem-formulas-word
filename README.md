@@ -14,6 +14,11 @@ Doplněk do Wordu pro Mac i Windows. Vzorce píšeš obyčejně a on je upraví 
 | `[Cu(NH3)4]2+` | [Cu(NH₃)₄]²⁺ |
 | `[Ni(en)3]2+` | [Ni(en)₃]²⁺ |
 | `SO4^2-` | SO₄²⁻ |
+| `->` nebo `-->` | → |
+| `<=>` | ⇌ |
+| `<->` | ↔ |
+| `CO2^` | CO₂↑ |
+| `BaSO4v` | BaSO₄↓ |
 
 ## Používání
 

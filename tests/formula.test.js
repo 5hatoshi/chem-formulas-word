@@ -66,7 +66,7 @@ describe('charges', () => {
   });
 
   test('does not read an arrow as a charge', () => {
-    expect(show('H2O->')).toBe('H_2_O');
+    expect(show('H2O->')).toBe('H_2_O | →');
   });
 });
 
