@@ -16,28 +16,31 @@ const POLL_QUIET_MS = 3000;
 const ITEM_NOT_FOUND = 'ItemNotFound';
 const CARET = '^';
 const RANGE_PROPERTIES = ['text', 'font/name', 'font/subscript', 'font/superscript'];
-export const ADDIN_VERSION = '1.0.3';
+export const ADDIN_VERSION = '1.0.4';
 
 let reportSkipped = () => {};
 
 /**
  * Sets who hears about a formula left unwritten because Word returned other text.
- * @param {(source: string, found: string) => void} listener
+ * @param {(source: string, found: string | null) => void} listener Null means not found.
  */
 export const onFormulaSkipped = (listener) => {
   reportSkipped = listener;
 };
 
 /**
- * Finds the Word range of each hit without a caret, with its font, in one round trip.
- * A token whose match count differs from the text (fields, hidden text) is skipped,
- * because its matches can't be told apart.
+ * Finds the Word range of each hit, with its font, in one round trip. A caret is
+ * written as "^^", because it is special in a Word search. A token whose match count
+ * differs from the text (fields, hidden text) is skipped, because its matches can't
+ * be told apart.
  * @param {any} context @param {any} scope @param {string} text @param {FormulaHit[]} hits
  * @returns {Promise<LocatedHit[]>}
  */
-async function locatePlainHits(context, scope, text, hits) {
+async function locateBySearch(context, scope, text, hits) {
   const sources = [...new Set(hits.map((hit) => hit.source))];
-  const searches = new Map(sources.map((source) => [source, scope.search(source, { matchCase: true })]));
+  const searches = new Map(
+    sources.map((source) => [source, scope.search(source.replaceAll(CARET, '^^'), { matchCase: true })]),
+  );
   searches.forEach((results) => results.load(RANGE_PROPERTIES.map((name) => `items/${name}`).join(',')));
   await context.sync();
 
@@ -49,9 +52,8 @@ async function locatePlainHits(context, scope, text, hits) {
 }
 
 /**
- * Prepares the searches around a hit's caret. A caret is special in a Word search and
- * can behave differently between platforms, so the text is split at each caret instead,
- * where it is taken literally.
+ * Prepares the searches around a hit's caret, for when the escaped search finds nothing.
+ * The text is split at each caret, where it is taken literally.
  * @param {any[]} pieces Parts of the text, each ending with a caret except the last.
  * @param {string} text @param {FormulaHit} hit
  * @returns {{ hit: FormulaHit, mark: any, heads: any, tails: any } | null} Null when
@@ -102,13 +104,16 @@ async function locateCaretHits(context, scope, text, hits) {
  *   A range holding anything but the formula is dropped, because writing would erase it.
  */
 async function locateHits(context, scope, text, hits) {
-  const hasCaret = (hit) => hit.source.includes(CARET);
-  const plain = hits.filter((hit) => !hasCaret(hit));
-  const withCaret = hits.filter(hasCaret);
+  const bySearch = hits.length > 0 ? await locateBySearch(context, scope, text, hits) : [];
+  const isFound = (hit) => bySearch.some((entry) => entry.hit === hit);
+  const missing = hits.filter((hit) => !isFound(hit) && hit.source.includes(CARET));
   const located = [
-    ...(plain.length > 0 ? await locatePlainHits(context, scope, text, plain) : []),
-    ...(withCaret.length > 0 ? await locateCaretHits(context, scope, text, withCaret) : []),
+    ...bySearch,
+    ...(missing.length > 0 ? await locateCaretHits(context, scope, text, missing) : []),
   ];
+  hits
+    .filter((hit) => !located.some((entry) => entry.hit === hit))
+    .forEach((hit) => reportSkipped(hit.source, null));
   const isExact = ({ hit, range }) => range.text === hit.source;
   located
     .filter((entry) => !isExact(entry))

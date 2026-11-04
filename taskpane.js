@@ -115,7 +115,9 @@ Office.onReady(async () => {
   document.getElementById('version').textContent = `Verze ${ADDIN_VERSION}`;
   onFormulaSkipped((source, found) => {
     document.getElementById('skipped').textContent =
-      `Vzorec ${source} jsem nechal být, Word na jeho místě vrátil ${JSON.stringify(found)}.`;
+      found === null
+        ? `Vzorec ${source} jsem nechal být, Word ho v textu nenašel.`
+        : `Vzorec ${source} jsem nechal být, Word na jeho místě vrátil ${JSON.stringify(found)}.`;
   });
 
   const toggle = document.getElementById('auto-toggle');
