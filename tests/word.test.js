@@ -332,6 +332,29 @@ describe('convertSelection', () => {
     expect(skipped).toEqual([['CO2^', 'CO2^\r']]);
   });
 
+  test('finds a caret formula by an escaped search when Word supports it', async () => {
+    const log = [];
+    const context = createFakeContext({
+      text: 'CO2^',
+      selectionText: 'CO2^',
+      matches: { 'CO2^^': [createFakeRange('CO2^', { log })] },
+    });
+
+    expect(await convertSelection(context)).toBe(1);
+    expect(log.map((entry) => entry.text).join('')).toBe('CO2↑');
+  });
+
+  test('reports a formula Word could not find at all', async () => {
+    const skipped = [];
+    onFormulaSkipped((source, found) => skipped.push([source, found]));
+    const context = createFakeContext({ text: 'CO2^', selectionText: 'CO2^', caretPieces: [] });
+
+    await convertSelection(context);
+    onFormulaSkipped(() => {});
+
+    expect(skipped).toEqual([['CO2^', null]]);
+  });
+
   test('skips a caret formula when Word splits the text differently', async () => {
     const context = createFakeContext({ text: 'CO2^', selectionText: 'CO2^', caretPieces: [] });
 
