@@ -179,6 +179,18 @@ describe('convertSelection', () => {
     expect(await convertSelection(context)).toBe(1);
   });
 
+  test('escapes the caret, which is a special character in a Word search', async () => {
+    const log = [];
+    const context = createFakeContext({
+      text: 'SO4^2-',
+      selectionText: 'SO4^2-',
+      matches: { 'SO4^^2-': [createFakeRange('SO4^2-', { log })] },
+    });
+
+    expect(await convertSelection(context)).toBe(1);
+    expect(log.map((entry) => entry.text).join('')).toBe('SO42−');
+  });
+
   test('skips a token when the search count does not match the text', async () => {
     const context = createFakeContext({ text: 'H2O', selectionText: 'H2O', matches: { H2O: [] } });
 

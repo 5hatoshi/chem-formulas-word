@@ -8,6 +8,12 @@ Doplněk do Wordu pro Mac i Windows. Vzorce píšeš obyčejně a on je upraví 
 | `Ca2+` | Ca²⁺ |
 | `SO42-` | SO₄²⁻ |
 | `CuSO4.5H2O` | CuSO₄·5H₂O |
+| `CH3COOH` | CH₃COOH |
+| `(C6H10O5)n` | (C₆H₁₀O₅)ₙ |
+| `CnH2n+2` | CₙH₂ₙ₊₂ |
+| `[Cu(NH3)4]2+` | [Cu(NH₃)₄]²⁺ |
+| `[Ni(en)3]2+` | [Ni(en)₃]²⁺ |
+| `SO4^2-` | SO₄²⁻ |
 
 ## Používání
 

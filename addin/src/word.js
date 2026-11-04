@@ -25,7 +25,7 @@ const ITEM_NOT_FOUND = 'ItemNotFound';
 async function locateHits(context, scope, text, hits) {
   const sources = [...new Set(hits.map((hit) => hit.source))];
   const searches = new Map(
-    sources.map((source) => [source, scope.search(source, { matchCase: true })]),
+    sources.map((source) => [source, scope.search(source.replaceAll('^', '^^'), { matchCase: true })]),
   );
   searches.forEach((results) => results.load('items/font/subscript,items/font/superscript'));
   await context.sync();
