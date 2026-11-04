@@ -14,7 +14,6 @@ const DEFAULT_DELAY_MS = 0;
 const DEFAULT_POLL_INTERVAL_MS = 0;
 const POLL_QUIET_MS = 3000;
 const ITEM_NOT_FOUND = 'ItemNotFound';
-export const BUILD = 'diag-1';
 const CARET = '^';
 const FONT_PROPERTIES = ['font/name', 'font/subscript', 'font/superscript'];
 
@@ -40,7 +39,7 @@ async function locatePlainHits(context, scope, text, hits) {
 
 /**
  * Prepares the searches around a hit's caret. A caret is special in a Word search and
- * was not converted in Word on the web, so the text is split at each caret instead,
+ * can behave differently between platforms, so the text is split at each caret instead,
  * where it is taken literally.
  * @param {any[]} pieces Parts of the text, each ending with a caret except the last.
  * @param {string} text @param {FormulaHit} hit
