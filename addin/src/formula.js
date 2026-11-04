@@ -268,7 +268,8 @@ const parsePart = (text, pos, coefficientPattern = COEFFICIENT) => {
       isDoubledCharge: Boolean(explicit.isDoubled),
     };
   }
-  if (!isChargeAt(text, parsed.end)) {
+  const hasVariableCountLast = !DIGITS_ONLY.test(parsed.units[parsed.units.length - 1].digits);
+  if (hasVariableCountLast || !isChargeAt(text, parsed.end)) {
     return { ...parsed, segments: [...lead, ...parsed.segments], sign: '', coefficient };
   }
   const sign = text[parsed.end] === '+' ? '+' : MINUS;
@@ -347,7 +348,10 @@ const isPlausibleSinglePart = (part) => {
   if (isExplicitCharge) return true;
   const lone = findLoneElement(units);
   // "C++" is a programming language, while "Ca++" and "SO4--" are ions.
-  if (isDoubledCharge) return lone === null || (sign[0] === '+' ? METALS : COMMON_ANIONS).has(lone.symbol);
+  if (isDoubledCharge) {
+    if (lone !== null) return (sign[0] === '+' ? METALS : COMMON_ANIONS).has(lone.symbol);
+    return units.some((unit) => unit.kind !== 'element' || unit.digits !== '');
+  }
 
   if (lone !== null && !sign) return ELEMENT_MOLECULES.has(lone.symbol + lone.digits);
   if (!sign) return true;
