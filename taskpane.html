@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chemické vzorce</title>
+    <link rel="stylesheet" href="taskpane.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script type="module" src="taskpane.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Chemické vzorce</h1>
+
+      <label class="toggle">
+        <input id="auto-toggle" type="checkbox" />
+        <span>Upravovat automaticky při psaní</span>
+      </label>
+      <p class="hint">Vzorec se upraví, jakmile za ním napíšeš mezeru nebo interpunkci. Nechtěnou úpravu vrátíš pomocí Zpět.</p>
+
+      <button id="convert-button" type="button">Upravit výběr</button>
+      <p class="hint">Zkratka: <kbd id="shortcut-hint"></kbd>. Když není nic vybráno, upraví se aktuální odstavec.</p>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+
+      <h2>Příklady</h2>
+      <table>
+        <tbody>
+          <tr><td>H2SO4</td><td>H<sub>2</sub>SO<sub>4</sub></td></tr>
+          <tr><td>Ca2+</td><td>Ca<sup>2+</sup></td></tr>
+          <tr><td>SO42-</td><td>SO<sub>4</sub><sup>2−</sup></td></tr>
+          <tr><td>CuSO4.5H2O</td><td>CuSO<sub>4</sub>·5H<sub>2</sub>O</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>

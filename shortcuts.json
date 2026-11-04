@@ -1,0 +1,18 @@
+{
+  "actions": [
+    {
+      "id": "ConvertFormulas",
+      "type": "ExecuteFunction",
+      "name": "Upravit chemické vzorce"
+    }
+  ],
+  "shortcuts": [
+    {
+      "action": "ConvertFormulas",
+      "key": {
+        "default": "Ctrl+Alt+Shift+H",
+        "mac": "Command+Shift+Alt+H"
+      }
+    }
+  ]
+}
