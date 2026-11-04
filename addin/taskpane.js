@@ -1,5 +1,6 @@
 /* global Office, Word */
 import { convertSelection, createAutoConverter, readActiveParagraph } from './src/word.js';
+import { measureCaret } from './src/diagnostics.js';
 
 const AUTO_SETTING_KEY = 'chem-vzorce.auto';
 const MIN_EVENT_API_VERSION = '1.6';
