@@ -27,7 +27,7 @@ async function locateHits(context, scope, text, hits) {
   const searches = new Map(
     sources.map((source) => [source, scope.search(source.replaceAll('^', '^^'), { matchCase: true })]),
   );
-  searches.forEach((results) => results.load('items/font/subscript,items/font/superscript'));
+  searches.forEach((results) => results.load('items/font/name,items/font/subscript,items/font/superscript'));
   await context.sync();
 
   return hits.flatMap((hit) => {
@@ -59,10 +59,16 @@ const applyStyle = (range, style) => {
   range.font.subscript = style === 'sub';
 };
 
-/** @param {any} range @param {Segment[]} segments */
+/**
+ * Word can give inserted symbols such as arrows a fallback font, which later typing
+ * then inherits, so the original font is set again. Mixed fonts have no single name.
+ * @param {any} range @param {Segment[]} segments
+ */
 const writeSegments = (range, segments) => {
+  const fontName = range.font.name;
   segments.reduce((previous, { text, style }, index) => {
     const written = index === 0 ? previous.insertText(text, 'Replace') : previous.insertText(text, 'After');
+    if (fontName) written.font.name = fontName;
     applyStyle(written, style);
     return written;
   }, range);
