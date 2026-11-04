@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+  <Id>3f7a1c52-8e4d-4b6a-9c21-5d0e7ab41f36</Id>
+  <Version>0.1.0.0</Version>
+  <ProviderName>Chemické vzorce</ProviderName>
+  <DefaultLocale>cs-CZ</DefaultLocale>
+  <DisplayName DefaultValue="Chemické vzorce"/>
+  <Description DefaultValue="Upravuje chemické vzorce: H2SO4 na H₂SO₄, Ca2+ na Ca²⁺ a CuSO4.5H2O na CuSO₄·5H₂O."/>
+  <IconUrl DefaultValue="https://5hatoshi.github.io/chem-formulas-word/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://5hatoshi.github.io/chem-formulas-word/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://5hatoshi.github.io/chem-formulas-word/taskpane.html"/>
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+  <Requirements>
+    <Sets DefaultMinVersion="1.1">
+      <Set Name="SharedRuntime" MinVersion="1.1"/>
+    </Sets>
+  </Requirements>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://5hatoshi.github.io/chem-formulas-word/taskpane.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <Runtimes>
+          <Runtime resid="Taskpane.Url" lifetime="long"/>
+        </Runtimes>
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="Taskpane.Url"/>
+          </GetStarted>
+          <FunctionFile resid="Taskpane.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="ChemFormulas.Group">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="ChemFormulas.Convert">
+                  <Label resid="Convert.Label"/>
+                  <Supertip>
+                    <Title resid="Convert.Label"/>
+                    <Description resid="Convert.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>ConvertFormulas</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="ChemFormulas.Settings">
+                  <Label resid="Settings.Label"/>
+                  <Supertip>
+                    <Title resid="Settings.Label"/>
+                    <Description resid="Settings.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ChemFormulas.Pane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://5hatoshi.github.io/chem-formulas-word/assets/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://5hatoshi.github.io/chem-formulas-word/assets/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://5hatoshi.github.io/chem-formulas-word/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://5hatoshi.github.io/chem-formulas-word/taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="Chemické vzorce jsou připravené"/>
+        <bt:String id="Group.Label" DefaultValue="Chemie"/>
+        <bt:String id="Convert.Label" DefaultValue="Upravit vzorce"/>
+        <bt:String id="Settings.Label" DefaultValue="Nastavení vzorců"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Na kartě Domů najdete skupinu Chemie."/>
+        <bt:String id="Convert.Tip" DefaultValue="Upraví vzorce ve výběru, nebo v aktuálním odstavci, když není nic vybráno."/>
+        <bt:String id="Settings.Tip" DefaultValue="Otevře panel, kde se zapíná automatická úprava při psaní."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+  <ExtendedOverrides Url="https://5hatoshi.github.io/chem-formulas-word/shortcuts.json"/>
+</OfficeApp>

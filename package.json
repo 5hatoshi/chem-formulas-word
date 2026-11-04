@@ -1,0 +1,22 @@
+{
+  "name": "chem-formulas-word",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Doplněk do Wordu, který upravuje chemické vzorce (H2SO4 → H₂SO₄).",
+  "scripts": {
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "icons": "node scripts/make-icons.js",
+    "certs": "office-addin-dev-certs install",
+    "dev": "http-server addin -p 3000 -S -C \"$HOME/.office-addin-dev-certs/localhost.crt\" -K \"$HOME/.office-addin-dev-certs/localhost.key\" -c-1",
+    "manifest:dev": "sed 's#https://5hatoshi.github.io/chem-formulas-word#https://localhost:3000#g' manifest.xml > manifest.dev.xml",
+    "deploy": "git push --force origin $(git subtree split --prefix addin main):refs/heads/gh-pages"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^5.1.0",
+    "http-server": "^14.1.1",
+    "office-addin-dev-certs": "^3.0.1",
+    "vitest": "^5.1.0"
+  }
+}
