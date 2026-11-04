@@ -59,6 +59,8 @@ const COMMON_IONS_WITHOUT_DIGITS = new Set(
 const BRAND_TOKEN = 'O2';
 const CAPITALISED_WORD_NEXT = /^\s+\p{Lu}\p{Ll}/u;
 
+const REACTION_ARROW = /^(?:<[-–]{1,2}>|<={1,2}>|[-–—]{1,2}>)/;
+const LOWERCASE = /\p{Ll}/u;
 const WORD_CHAR = /[\p{L}\p{N}_]/u;
 const CHARGE_SIGNS = new Set(['+', '-', '−', '–']);
 const NOT_AFTER_CHARGE = /[\p{L}\p{N}_>=+\-−–]/u;
@@ -194,6 +196,7 @@ function parseUnits(text, start, scope = TOP_LEVEL) {
 const isChargeAt = (text, pos) => {
   if (!CHARGE_SIGNS.has(text[pos])) return false;
   const after = text[pos + 1];
+  if (text[pos] === '+' && REACTION_ARROW.test(text.slice(pos + 1))) return true;
   return after === undefined || !NOT_AFTER_CHARGE.test(after);
 };
 
@@ -398,6 +401,37 @@ const mergeSegments = (segments) =>
   }, /** @type {Segment[]} */ ([]));
 
 /**
+ * Reads a reaction arrow. "p->x" is left alone: letters on both sides mean code.
+ * @param {string} text @param {number} pos @returns {{ end: number, arrow: string } | null}
+ */
+const readReactionArrow = (text, pos) => {
+  const token = REACTION_ARROW.exec(text.slice(pos))?.[0];
+  if (token === undefined) return null;
+  const end = pos + token.length;
+  if (LOWERCASE.test(text[pos - 1] ?? '') && LOWERCASE.test(text[end] ?? '')) return null;
+  const arrow = token.startsWith('<=') ? '⇌' : token.startsWith('<') ? '↔' : '→';
+  return { end, arrow };
+};
+
+/**
+ * Reads the mark for a gas (^) or a precipitate (v) glued to a formula. Without a
+ * count or two elements it is likely a word; "v" also needs a two-letter element,
+ * because "Cv." and "Sv." are common abbreviations.
+ * @param {string} text @param {number} pos @param {Part[]} parts @returns {string | null}
+ */
+const readPhaseArrow = (text, pos, parts) => {
+  const mark = text[pos];
+  if (mark !== '^' && mark !== 'v') return null;
+  const after = text[pos + 1] ?? '';
+  if (WORD_CHAR.test(after) || CHARGE_SIGNS.has(after)) return null;
+  const units = parts.flatMap((part) => part.units);
+  const hasCount = parts.some(hasDigit);
+  if (mark === '^') return hasCount || units.length > 1 ? '↑' : null;
+  const hasLongSymbol = units.some((unit) => unit.symbol.length === 2);
+  return hasCount || (units.length > 1 && hasLongSymbol) ? '↓' : null;
+};
+
+/**
  * Lists the spans of URLs and e-mail addresses, which must stay as written.
  * @param {string} text @returns {Array<[number, number]>}
  */
@@ -417,26 +451,37 @@ export function findFormulas(text, mode = 'strict') {
   let pos = 0;
 
   while (pos < text.length) {
+    const reactionArrow = isProtected(pos) ? null : readReactionArrow(text, pos);
+    if (reactionArrow !== null) {
+      const { end, arrow } = reactionArrow;
+      hits = [...hits, { start: pos, end, source: text.slice(pos, end), segments: [{ text: arrow, style: 'normal' }] }];
+      pos = end;
+      continue;
+    }
+
     const isWordStart = pos === 0 || !WORD_CHAR.test(text[pos - 1]);
     const parsed = isWordStart && !isProtected(pos) ? parseFormula(text, pos) : null;
-    const isWholeToken =
-      parsed !== null && (parsed.end === text.length || !WORD_CHAR.test(text[parsed.end]));
+    const phaseArrow = parsed === null ? null : readPhaseArrow(text, parsed.end, parsed.parts);
+    const tokenEnd = parsed === null ? pos : parsed.end + (phaseArrow ? 1 : 0);
+    const isWholeToken = parsed !== null && (tokenEnd === text.length || !WORD_CHAR.test(text[tokenEnd]));
 
     if (!isWholeToken) {
       pos += 1;
       continue;
     }
 
-    const source = text.slice(pos, parsed.end);
-    const segments = mergeSegments(parsed.segments);
-    const isChanged = segments.some((segment) => segment.style !== 'normal') || parsed.parts.length > 1;
+    const formula = text.slice(pos, parsed.end);
+    const arrowSegments = phaseArrow ? [{ text: phaseArrow, style: 'normal' }] : [];
+    const segments = mergeSegments([...parsed.segments, ...arrowSegments]);
+    const isChanged =
+      segments.some((segment) => segment.style !== 'normal') || parsed.parts.length > 1 || phaseArrow !== null;
     const isAccepted =
       mode === 'lenient' ||
-      (isPlausibleInProse(source, parsed.parts, segments) && !isBrandName(text, source, parsed.end));
+      (isPlausibleInProse(formula, parsed.parts, segments) && !isBrandName(text, formula, tokenEnd));
     if (isChanged && isAccepted) {
-      hits = [...hits, { start: pos, end: parsed.end, source, segments }];
+      hits = [...hits, { start: pos, end: tokenEnd, source: text.slice(pos, tokenEnd), segments }];
     }
-    pos = parsed.end;
+    pos = tokenEnd;
   }
   return hits;
 }
