@@ -530,6 +530,22 @@ describe('createAutoConverter', () => {
     expect(runWord).toHaveBeenCalledTimes(2);
   });
 
+  test('converts a paragraph the caret left after a quiet period', async () => {
+    let active = paragraphState('p1', 'CO2^');
+    const readActive = vi.fn(async () => active);
+    const { converter, runWord } = setup(undefined, readActive);
+
+    converter.handleEvent({ source: 'Local', uniqueLocalIds: [] });
+    await vi.advanceTimersByTimeAsync(QUIET_MS + POLL_MS);
+    expect(runWord).not.toHaveBeenCalled();
+
+    active = paragraphState('p2', '');
+    converter.handleEvent({ source: 'Local', uniqueLocalIds: ['p2'] });
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+
+    expect(runWord.mock.calls.length).toBeGreaterThan(1);
+  });
+
   test('does nothing while the text stays the same', async () => {
     const { converter, runWord } = setup();
 

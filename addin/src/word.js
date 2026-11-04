@@ -16,7 +16,7 @@ const POLL_QUIET_MS = 3000;
 const ITEM_NOT_FOUND = 'ItemNotFound';
 const CARET = '^';
 const RANGE_PROPERTIES = ['text', 'font/name', 'font/subscript', 'font/superscript'];
-export const ADDIN_VERSION = '1.0.2';
+export const ADDIN_VERSION = '1.0.3';
 
 let reportSkipped = () => {};
 
@@ -321,7 +321,9 @@ export function createAutoConverter({
       return;
     }
     if (Date.now() - lastChangeAt >= POLL_QUIET_MS) {
-      stopPolling();
+      // lastActive stays, so the next change can still convert the paragraph left behind.
+      clearTimeout(pollTimer);
+      pollTimer = null;
       return;
     }
     pollTimer = setTimeout(poll, pollIntervalMs);
