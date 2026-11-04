@@ -15,7 +15,8 @@ const DEFAULT_POLL_INTERVAL_MS = 0;
 const POLL_QUIET_MS = 3000;
 const ITEM_NOT_FOUND = 'ItemNotFound';
 const CARET = '^';
-const FONT_PROPERTIES = ['font/name', 'font/subscript', 'font/superscript'];
+const RANGE_PROPERTIES = ['text', 'font/name', 'font/subscript', 'font/superscript'];
+export const ADDIN_VERSION = '1.0.1';
 
 /**
  * Finds the Word range of each hit without a caret, with its font, in one round trip.
@@ -27,7 +28,7 @@ const FONT_PROPERTIES = ['font/name', 'font/subscript', 'font/superscript'];
 async function locatePlainHits(context, scope, text, hits) {
   const sources = [...new Set(hits.map((hit) => hit.source))];
   const searches = new Map(sources.map((source) => [source, scope.search(source, { matchCase: true })]));
-  searches.forEach((results) => results.load(FONT_PROPERTIES.map((name) => `items/${name}`).join(',')));
+  searches.forEach((results) => results.load(RANGE_PROPERTIES.map((name) => `items/${name}`).join(',')));
   await context.sync();
 
   return hits.flatMap((hit) => {
@@ -80,7 +81,7 @@ async function locateCaretHits(context, scope, text, hits) {
     const end = tails ? tails.items[0] : mark.getRange('End');
     return start && end ? [{ hit, range: start.expandTo(end) }] : [];
   });
-  located.forEach(({ range }) => range.load(FONT_PROPERTIES.join(',')));
+  located.forEach(({ range }) => range.load(RANGE_PROPERTIES.join(',')));
   await context.sync();
   return located;
 }
@@ -88,6 +89,7 @@ async function locateCaretHits(context, scope, text, hits) {
 /**
  * @param {any} context @param {any} scope @param {string} text @param {FormulaHit[]} hits
  * @returns {Promise<LocatedHit[]>} The hits Word could find, in the order of the text.
+ *   A range holding anything but the formula is dropped, because writing would erase it.
  */
 async function locateHits(context, scope, text, hits) {
   const hasCaret = (hit) => hit.source.includes(CARET);
@@ -97,7 +99,9 @@ async function locateHits(context, scope, text, hits) {
     ...(plain.length > 0 ? await locatePlainHits(context, scope, text, plain) : []),
     ...(withCaret.length > 0 ? await locateCaretHits(context, scope, text, withCaret) : []),
   ];
-  return located.sort((a, b) => a.hit.start - b.hit.start);
+  return located
+    .filter(({ hit, range }) => range.text === hit.source)
+    .sort((a, b) => a.hit.start - b.hit.start);
 }
 
 /**

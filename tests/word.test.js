@@ -303,6 +303,20 @@ describe('convertSelection', () => {
     expect(log.map((entry) => entry.text).join('')).toBe('CO2↑');
   });
 
+  test('never overwrites a range holding more than the formula', async () => {
+    const log = [];
+    const text = 'CaCO3 -> CaO + CO2^';
+    const context = createFakeContext({
+      text,
+      selectionText: text,
+      caretPieces: [createCaretPiece({ CO2: {} }, createFakeRange(text, { log }))],
+    });
+
+    await convertSelection(context);
+
+    expect(log).toEqual([]);
+  });
+
   test('skips a caret formula when Word splits the text differently', async () => {
     const context = createFakeContext({ text: 'CO2^', selectionText: 'CO2^', caretPieces: [] });
 
