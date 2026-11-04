@@ -16,7 +16,17 @@ const POLL_QUIET_MS = 3000;
 const ITEM_NOT_FOUND = 'ItemNotFound';
 const CARET = '^';
 const RANGE_PROPERTIES = ['text', 'font/name', 'font/subscript', 'font/superscript'];
-export const ADDIN_VERSION = '1.0.1';
+export const ADDIN_VERSION = '1.0.2';
+
+let reportSkipped = () => {};
+
+/**
+ * Sets who hears about a formula left unwritten because Word returned other text.
+ * @param {(source: string, found: string) => void} listener
+ */
+export const onFormulaSkipped = (listener) => {
+  reportSkipped = listener;
+};
 
 /**
  * Finds the Word range of each hit without a caret, with its font, in one round trip.
@@ -99,9 +109,11 @@ async function locateHits(context, scope, text, hits) {
     ...(plain.length > 0 ? await locatePlainHits(context, scope, text, plain) : []),
     ...(withCaret.length > 0 ? await locateCaretHits(context, scope, text, withCaret) : []),
   ];
-  return located
-    .filter(({ hit, range }) => range.text === hit.source)
-    .sort((a, b) => a.hit.start - b.hit.start);
+  const isExact = ({ hit, range }) => range.text === hit.source;
+  located
+    .filter((entry) => !isExact(entry))
+    .forEach(({ hit, range }) => reportSkipped(hit.source, range.text));
+  return located.filter(isExact).sort((a, b) => a.hit.start - b.hit.start);
 }
 
 /**

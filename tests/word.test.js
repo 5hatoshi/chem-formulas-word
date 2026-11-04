@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { convertParagraph, convertSelection, createAutoConverter } from '../addin/src/word.js';
+import { convertParagraph, convertSelection, createAutoConverter, onFormulaSkipped } from '../addin/src/word.js';
 
 /** Models real Word: clearing either flag returns the text to the baseline. */
 const createLinkedFont = () => {
@@ -315,6 +315,21 @@ describe('convertSelection', () => {
     await convertSelection(context);
 
     expect(log).toEqual([]);
+  });
+
+  test('reports what Word returned instead of a skipped formula', async () => {
+    const skipped = [];
+    onFormulaSkipped((source, found) => skipped.push([source, found]));
+    const context = createFakeContext({
+      text: 'CO2^',
+      selectionText: 'CO2^',
+      caretPieces: [createCaretPiece({ CO2: {} }, createFakeRange('CO2^\r'))],
+    });
+
+    await convertSelection(context);
+    onFormulaSkipped(() => {});
+
+    expect(skipped).toEqual([['CO2^', 'CO2^\r']]);
   });
 
   test('skips a caret formula when Word splits the text differently', async () => {
